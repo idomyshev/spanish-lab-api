@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { VerbForm } from './verb-form.entity';
+import { VerbForm } from './entities/verb-form.entity';
 import { Verb } from './entities/verb.entity';
 
 @Injectable()
@@ -18,7 +18,16 @@ export class VerbsService {
   }
 
   async findOne(id: number): Promise<Verb> {
-    return this.verbsRepository.findOne(id, { relations: ['forms'] });
+    const verb = await this.verbsRepository.findOne({
+      where: { id: id },
+      relations: ['forms'],
+    });
+
+    if (!verb) {
+      throw new NotFoundException(`Verb with id ${id} not found`);
+    }
+
+    return verb;
   }
 
   async create(verb: Verb): Promise<Verb> {
@@ -36,10 +45,13 @@ export class VerbsService {
 
   async findFormsByVerbAndTense(
     verbId: number,
-    tense: string,
+    tenseId: number,
   ): Promise<VerbForm[]> {
     return this.verbFormsRepository.find({
-      where: { verb: { id: verbId }, tense },
+      where: {
+        verb: { id: verbId },
+        tense: { id: tenseId }, // Ищем по идентификатору времени
+      },
     });
   }
 }
